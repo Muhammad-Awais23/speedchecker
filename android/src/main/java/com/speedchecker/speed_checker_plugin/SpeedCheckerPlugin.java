@@ -245,79 +245,124 @@ public class SpeedCheckerPlugin implements FlutterPlugin, MethodChannel.MethodCa
                 sendEvent();
             }
 
-         @Override
+@Override
 public void onTestFinished(SpeedTestResult speedTestResult) {
     Log.d(TAG, "onTestFinished");
-    synchronized (map) {
-        map.put("status", "Speed test finished");
-        map.put("server", speedTestResult.getServer().Domain);
-        map.put("ping", speedTestResult.getPing());
-        map.put("jitter", speedTestResult.getJitter());
-        map.put("downloadSpeed", speedTestResult.getDownloadSpeed());
-        map.put("uploadSpeed", speedTestResult.getUploadSpeed());
-        map.put("connectionType", speedTestResult.getConnectionTypeHuman());
-        map.put("serverInfo", speedTestResult.getServerInfo());
-        map.put("deviceInfo", speedTestResult.getDeviceInfo());
-        map.put("downloadTransferredMb", speedTestResult.getDownloadTransferredMb());
-        map.put("uploadTransferredMb", speedTestResult.getUploadTransferredMb());
-        
-        // Get IP and ISP information
-        map.put("ip", speedTestResult.UserIP != null ? speedTestResult.UserIP : "");
-        map.put("isp", speedTestResult.UserISP != null ? speedTestResult.UserISP : "");
-        
-        // Handle cell coverage info with proper null checks
-        try {
-            CellCoverageInfo cellCoverageInfo = speedTestResult.cellCoverageInfo;
-            if (cellCoverageInfo != null) {
-                Map<String, Object> coverageMap = new HashMap<>();
-                
-                // Add each field with null checks
-                if (cellCoverageInfo.signalLevel != null) {
-                    coverageMap.put("rsrp", cellCoverageInfo.signalLevel);
-                }
-                if (cellCoverageInfo.signalQuality != null) {
-                    coverageMap.put("rsrq", cellCoverageInfo.signalQuality);
-                }
-                if (cellCoverageInfo.snr != null) {
-                    coverageMap.put("sinr", cellCoverageInfo.snr);
-                }
-                if (cellCoverageInfo.channelNumber != null) {
-                    coverageMap.put("arfcn", cellCoverageInfo.channelNumber);
-                }
-                if (cellCoverageInfo.lac != null) {
-                    coverageMap.put("tac", cellCoverageInfo.lac);
-                }
-                if (cellCoverageInfo.pci != null) {
-                    coverageMap.put("pci", cellCoverageInfo.pci);
-                }
-                if (cellCoverageInfo.mcc != null) {
-                    coverageMap.put("mcc", cellCoverageInfo.mcc);
-                }
-                if (cellCoverageInfo.mnc != null) {
-                    coverageMap.put("mnc", cellCoverageInfo.mnc);
-                }
-                if (cellCoverageInfo.cellId != null) {
-                    coverageMap.put("enbId", cellCoverageInfo.cellId >> 8);
-                    coverageMap.put("localCellId", cellCoverageInfo.cellId & 0xFF);
-                    coverageMap.put("eci", cellCoverageInfo.cellId);
-                }
-                
-                // Only add cellCoverageInfo if we have at least some data
-                if (!coverageMap.isEmpty()) {
-                    map.put("cellCoverageInfo", coverageMap);
-                }
-            } else {
-                Log.d(TAG, "cellCoverageInfo is null, skipping");
+    
+    // Wrap the entire method in try-catch to prevent crashes
+    try {
+        synchronized (map) {
+            map.put("status", "Speed test finished");
+            
+            // Safely get server info
+            if (speedTestResult.getServer() != null) {
+                map.put("server", speedTestResult.getServer().Domain);
             }
-        } catch (Exception e) {
-            Log.e(TAG, "Error getting cell coverage info", e);
-            // Don't crash - just continue without cell coverage info
+            
+            map.put("ping", speedTestResult.getPing());
+            map.put("jitter", speedTestResult.getJitter());
+            map.put("downloadSpeed", speedTestResult.getDownloadSpeed());
+            map.put("uploadSpeed", speedTestResult.getUploadSpeed());
+            map.put("connectionType", speedTestResult.getConnectionTypeHuman());
+            map.put("serverInfo", speedTestResult.getServerInfo());
+            map.put("deviceInfo", speedTestResult.getDeviceInfo());
+            map.put("downloadTransferredMb", speedTestResult.getDownloadTransferredMb());
+            map.put("uploadTransferredMb", speedTestResult.getUploadTransferredMb());
+            
+            // Get IP and ISP information
+            map.put("ip", speedTestResult.UserIP != null ? speedTestResult.UserIP : "");
+            map.put("isp", speedTestResult.UserISP != null ? speedTestResult.UserISP : "");
+            
+            // Handle cell coverage info with extensive null checks
+            try {
+                CellCoverageInfo cellCoverageInfo = speedTestResult.cellCoverageInfo;
+                if (cellCoverageInfo != null) {
+                    Map<String, Object> coverageMap = new HashMap<>();
+                    
+                    // Add each field with null checks
+                    if (cellCoverageInfo.signalLevel != null) {
+                        coverageMap.put("rsrp", cellCoverageInfo.signalLevel);
+                    }
+                    if (cellCoverageInfo.signalQuality != null) {
+                        coverageMap.put("rsrq", cellCoverageInfo.signalQuality);
+                    }
+                    if (cellCoverageInfo.snr != null) {
+                        coverageMap.put("sinr", cellCoverageInfo.snr);
+                    }
+                    if (cellCoverageInfo.channelNumber != null) {
+                        coverageMap.put("arfcn", cellCoverageInfo.channelNumber);
+                    }
+                    if (cellCoverageInfo.lac != null) {
+                        coverageMap.put("tac", cellCoverageInfo.lac);
+                    }
+                    if (cellCoverageInfo.pci != null) {
+                        coverageMap.put("pci", cellCoverageInfo.pci);
+                    }
+                    if (cellCoverageInfo.mcc != null) {
+                        coverageMap.put("mcc", cellCoverageInfo.mcc);
+                    }
+                    if (cellCoverageInfo.mnc != null) {
+                        coverageMap.put("mnc", cellCoverageInfo.mnc);
+                    }
+                    if (cellCoverageInfo.cellId != null) {
+                        coverageMap.put("enbId", cellCoverageInfo.cellId >> 8);
+                        coverageMap.put("localCellId", cellCoverageInfo.cellId & 0xFF);
+                        coverageMap.put("eci", cellCoverageInfo.cellId);
+                    }
+                    
+                    // Only add cellCoverageInfo if we have at least some data
+                    if (!coverageMap.isEmpty()) {
+                        map.put("cellCoverageInfo", coverageMap);
+                    }
+                } else {
+                    Log.d(TAG, "cellCoverageInfo is null, attempting manual retrieval");
+                    
+                    // Use ManualCellInfoProvider as fallback
+                    try {
+                        Context context = getContext();
+                        if (context != null) {
+                            ManualCellInfoProvider.init(context);
+                            Map<String, Object> manualCellInfo = ManualCellInfoProvider.createCellInfoMap();
+                            if (manualCellInfo != null && !manualCellInfo.isEmpty()) {
+                                map.put("cellCoverageInfo", manualCellInfo);
+                                Log.d(TAG, "Added manual cell info");
+                            }
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error getting manual cell info", e);
+                    }
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error processing cell coverage info: " + e.getMessage(), e);
+                // Try manual retrieval as last resort
+                try {
+                    Context context = getContext();
+                    if (context != null) {
+                        ManualCellInfoProvider.init(context);
+                        Map<String, Object> manualCellInfo = ManualCellInfoProvider.createCellInfoMap();
+                        if (manualCellInfo != null && !manualCellInfo.isEmpty()) {
+                            map.put("cellCoverageInfo", manualCellInfo);
+                            Log.d(TAG, "Added manual cell info after error");
+                        }
+                    }
+                } catch (Exception ex) {
+                    Log.e(TAG, "Failed to get manual cell info", ex);
+                }
+            }
         }
+    } catch (Exception e) {
+        Log.e(TAG, "Critical error in onTestFinished: " + e.getMessage(), e);
+        // Ensure we still send some response even if there's an error
+        synchronized (map) {
+            map.put("status", "Speed test finished with errors");
+            map.put("error", "Error processing results: " + e.getMessage());
+        }
+    } finally {
+        // Always send event and clear state
+        sendEvent();
+        clearState();
     }
-    sendEvent();
-    clearState();
 }
-
             @Override
             public void onPingStarted() {
                 Log.d(TAG, "onPingStarted");
