@@ -201,6 +201,7 @@ private void handleSpeedTestOptions(@NonNull MethodCall call, @NonNull MethodCha
 
 
 
+
     // ================== SpeedTestListener Implementation ================== //
 
     private SpeedTestListener createSpeedTestListener() {
@@ -512,17 +513,29 @@ private void checkPermissionAndStartTest() {
     SpeedcheckerSDK.init(context);
     
     try {
-        // Create default options if not set
-        if (speedTestOptions == null) {
-            speedTestOptions = new SpeedTestOptions();
-            speedTestOptions.setSpeedTestType(2);
-        }
-        
-        // Start the test
-        if (isCustomServer) {
+        // Start the test - use simple method for free version
+        if (isCustomServer && speedTestOptions != null) {
+            // Custom server with options (paid version)
             SpeedcheckerSDK.SpeedTest.startTest(context, server, speedTestOptions);
+        } else if (isCustomServer) {
+            // Custom server without options (paid version)
+            SpeedcheckerSDK.SpeedTest.startTest(context, server);
+        } else if (speedTestOptions != null) {
+            // Options without custom server (paid version)
+            try {
+                SpeedcheckerSDK.SpeedTest.startTest(context, speedTestOptions);
+            } catch (RuntimeException e) {
+                // If paid features not available, fall back to free version
+                if (e.getMessage() != null && e.getMessage().contains("Not supported in free version")) {
+                    Log.w(TAG, "Options not supported, using free version");
+                    SpeedcheckerSDK.SpeedTest.startTest(context);
+                } else {
+                    throw e;
+                }
+            }
         } else {
-            SpeedcheckerSDK.SpeedTest.startTest(context, speedTestOptions);
+            // Free version - no options, no custom server
+            SpeedcheckerSDK.SpeedTest.startTest(context);
         }
         
         Log.d(TAG, "Speed test started successfully");
