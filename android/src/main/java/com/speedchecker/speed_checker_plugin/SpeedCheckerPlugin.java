@@ -191,23 +191,14 @@ public class SpeedCheckerPlugin implements FlutterPlugin, MethodChannel.MethodCa
         }
     }
 
-   private void handleSpeedTestOptions(@NonNull MethodCall call, @NonNull MethodChannel.Result result) {
+private void handleSpeedTestOptions(@NonNull MethodCall call, @NonNull MethodChannel.Result result) {
     speedTestOptions = new SpeedTestOptions();
-    speedTestOptions.setSpeedTestType(2); // Set the speed test type to 2
+    speedTestOptions.setSpeedTestType(2);
     Boolean sendResults = call.argument("sendResultsToSpeedChecker");
     speedTestOptions.setSendResultsToSpeedChecker(sendResults != null && sendResults);
-    
-    // CRITICAL FIX: Disable cell info collection to prevent SDK crash
-    try {
-        // Try to disable cell info collection if the method exists
-        speedTestOptions.setCollectCellInfo(false);
-        Log.d(TAG, "Cell info collection disabled");
-    } catch (Exception e) {
-        Log.w(TAG, "Could not disable cell info collection: " + e.getMessage());
-    }
-    
     result.success(null);
 }
+
 
 
     // ================== SpeedTestListener Implementation ================== //
@@ -511,30 +502,23 @@ public void onTestFinished(SpeedTestResult speedTestResult) {
         return contextRef != null ? contextRef.get() : null;
     }
 
-  private void checkPermissionAndStartTest() {
+private void checkPermissionAndStartTest() {
     Context context = getContext();
     if (context == null) {
         Log.e(TAG, "Context is null");
         return;
     }
 
-    // Make sure SDK is initialized
     SpeedcheckerSDK.init(context);
     
     try {
-        // IMPORTANT: Always create options if they don't exist
+        // Create default options if not set
         if (speedTestOptions == null) {
             speedTestOptions = new SpeedTestOptions();
             speedTestOptions.setSpeedTestType(2);
-            try {
-                speedTestOptions.setCollectCellInfo(false);
-                Log.d(TAG, "Created default options with cell info disabled");
-            } catch (Exception e) {
-                Log.w(TAG, "Could not disable cell info in default options");
-            }
         }
         
-        // Start the test based on the options
+        // Start the test
         if (isCustomServer) {
             SpeedcheckerSDK.SpeedTest.startTest(context, server, speedTestOptions);
         } else {
